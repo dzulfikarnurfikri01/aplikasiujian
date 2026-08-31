@@ -1490,6 +1490,581 @@ class Adm extends CI_Controller
 										WHERE tr_ikut_ujian.id_tes = '$uri3' ORDER BY tr_ikut_ujian.nilai DESC")->result();
 		$this->load->view("m_guru_tes_hasil_detil_cetak", $a);
 	}
+	public function hasil_ujian_cetak_detail()
+	{
+		$this->cek_aktif();
+
+		$uri3 = $this->uri->segment(3);
+
+		// =========================================================
+		// HASIL UJIAN
+		// =========================================================
+
+		$hasil = $this->db->query("
+			SELECT 
+				m_siswa.nama,
+				tr_ikut_ujian.id_user,
+				tr_ikut_ujian.list_soal,
+				tr_ikut_ujian.list_jawaban,
+				tr_ikut_ujian.jml_benar,
+				tr_ikut_ujian.nilai
+			FROM tr_ikut_ujian
+			INNER JOIN m_siswa 
+				ON tr_ikut_ujian.id_user = m_siswa.id
+			WHERE tr_ikut_ujian.id_tes = '$uri3'
+			ORDER BY tr_ikut_ujian.nilai DESC
+		")->result();
+
+
+		// =========================================================
+		// CEK DATA
+		// =========================================================
+
+		if (empty($hasil)) {
+			show_error('Data hasil ujian tidak ditemukan.');
+			return;
+		}
+
+
+		// =========================================================
+		// DAFTAR SOAL
+		// =========================================================
+
+		$list_soal = explode(',', $hasil[0]->list_soal);
+
+		$list_soal = array_filter(
+			array_map('trim', $list_soal)
+		);
+
+
+		// =========================================================
+		// AMBIL DATA SOAL
+		// =========================================================
+
+		$soal = array();
+
+		if (!empty($list_soal)) {
+
+			$data_soal = $this->db
+				->where_in('id', $list_soal)
+				->get('m_soal')
+				->result();
+
+			$soal_index = array();
+
+			foreach ($data_soal as $row) {
+				$soal_index[$row->id] = $row;
+			}
+
+			// Pertahankan urutan soal
+			foreach ($list_soal as $id_soal) {
+
+				$id_soal = (int) $id_soal;
+
+				if (isset($soal_index[$id_soal])) {
+					$soal[] = $soal_index[$id_soal];
+				}
+			}
+		}
+
+
+		// =========================================================
+		// LOAD PHPSPREADSHEET
+		// =========================================================
+
+		$this->load->library('Excel2');
+
+		$spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+
+		$sheet = $spreadsheet->getActiveSheet();
+
+		$sheet->setTitle('Hasil Ujian');
+
+
+		// =========================================================
+		// STYLE
+		// =========================================================
+
+		$borderStyle = array(
+			'borders' => array(
+				'allBorders' => array(
+					'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN
+				)
+			)
+		);
+
+		$headerStyle = array(
+			'font' => array(
+				'bold' => true
+			),
+			'alignment' => array(
+				'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+				'vertical'   => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER
+			),
+			'borders' => array(
+				'allBorders' => array(
+					'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN
+				)
+			)
+		);
+
+
+		// =========================================================
+		// BARIS HEADER
+		// =========================================================
+
+		$kolom = 1;
+
+
+		// ---------------------------------------------------------
+		// NO
+		// ---------------------------------------------------------
+
+		$sheet->setCellValueByColumnAndRow(
+			$kolom,
+			1,
+			'No'
+		);
+
+		$sheet->mergeCellsByColumnAndRow(
+			$kolom,
+			1,
+			$kolom,
+			2
+		);
+
+		$kolom++;
+
+
+		// ---------------------------------------------------------
+		// NAMA SISWA
+		// ---------------------------------------------------------
+
+		$kolom_nama = $kolom;
+
+		$sheet->setCellValueByColumnAndRow(
+			$kolom,
+			1,
+			'Nama Siswa'
+		);
+
+		$sheet->mergeCellsByColumnAndRow(
+			$kolom,
+			1,
+			$kolom,
+			2
+		);
+
+		$kolom++;
+
+
+		// =========================================================
+		// NOMOR SOAL + KUNCI
+		// =========================================================
+
+		foreach ($soal as $index => $data_soal) {
+
+			$nomor_soal = $index + 1;
+
+			// Nomor soal
+			$sheet->setCellValueByColumnAndRow(
+				$kolom,
+				1,
+				$nomor_soal
+			);
+
+			// Kunci jawaban
+			$kunci = '';
+
+			if (isset($data_soal->jawaban)) {
+				$kunci = strtoupper(
+					trim($data_soal->jawaban)
+				);
+			}
+
+			$sheet->setCellValueByColumnAndRow(
+				$kolom,
+				2,
+				$kunci
+			);
+
+			$kolom++;
+		}
+
+
+		// =========================================================
+		// JUMLAH BENAR
+		// =========================================================
+
+		$kolom_benar = $kolom;
+
+		$sheet->setCellValueByColumnAndRow(
+			$kolom,
+			1,
+			'Jumlah Benar'
+		);
+
+		$sheet->mergeCellsByColumnAndRow(
+			$kolom,
+			1,
+			$kolom,
+			2
+		);
+
+		$kolom++;
+
+
+		// =========================================================
+		// NILAI
+		// =========================================================
+
+		$kolom_nilai = $kolom;
+
+		$sheet->setCellValueByColumnAndRow(
+			$kolom,
+			1,
+			'Nilai'
+		);
+
+		$sheet->mergeCellsByColumnAndRow(
+			$kolom,
+			1,
+			$kolom,
+			2
+		);
+
+		$kolom++;
+
+
+		// =========================================================
+		// STYLE HEADER
+		// =========================================================
+
+		$jumlah_kolom = $kolom - 1;
+
+		$sheet->getStyleByColumnAndRow(
+			1,
+			1,
+			$jumlah_kolom,
+			2
+		)->applyFromArray($headerStyle);
+
+
+		// =========================================================
+		// DATA SISWA
+		// =========================================================
+
+		$baris = 3;
+		$no = 1;
+
+		foreach ($hasil as $siswa) {
+
+			// =====================================================
+			// PARSING JAWABAN SISWA
+			// =====================================================
+
+			$jawaban_siswa = array();
+
+			$list_jawaban = explode(
+				',',
+				$siswa->list_jawaban
+			);
+
+			foreach ($list_jawaban as $item) {
+
+				$item = trim($item);
+
+				if ($item == '') {
+					continue;
+				}
+
+				$parts = explode(':', $item);
+
+				if (count($parts) >= 2) {
+
+					$id_soal = (int) $parts[0];
+
+					$jawaban = strtoupper(
+						trim($parts[1])
+					);
+
+					$jawaban_siswa[$id_soal] = $jawaban;
+				}
+			}
+
+
+			// =====================================================
+			// NOMOR
+			// =====================================================
+
+			$kolom_data = 1;
+
+			$sheet->setCellValueByColumnAndRow(
+				$kolom_data,
+				$baris,
+				$no
+			);
+
+			$kolom_data++;
+
+
+			// =====================================================
+			// NAMA SISWA
+			// =====================================================
+
+			$sheet->setCellValueByColumnAndRow(
+				$kolom_data,
+				$baris,
+				$siswa->nama
+			);
+
+			$kolom_data++;
+
+
+			// =====================================================
+			// JAWABAN SISWA
+			// =====================================================
+
+			foreach ($soal as $data_soal) {
+
+				$id_soal = (int) $data_soal->id;
+
+				$jawaban = '';
+
+				if (isset($jawaban_siswa[$id_soal])) {
+					$jawaban = $jawaban_siswa[$id_soal];
+				}
+
+				$sheet->setCellValueByColumnAndRow(
+					$kolom_data,
+					$baris,
+					$jawaban
+				);
+
+				$kolom_data++;
+			}
+
+
+			// =====================================================
+			// JUMLAH BENAR
+			// =====================================================
+
+			$sheet->setCellValueByColumnAndRow(
+				$kolom_data,
+				$baris,
+				$siswa->jml_benar
+			);
+
+			$kolom_data++;
+
+
+			// =====================================================
+			// NILAI
+			// =====================================================
+
+			$sheet->setCellValueExplicit(
+				$sheet->getCellByColumnAndRow(
+					$kolom_data,
+					$baris
+				)->getCoordinate(),
+				(float) $siswa->nilai,
+				\PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC
+			);
+
+			$baris++;
+			$no++;
+		}
+
+
+		// =========================================================
+		// BORDER DATA
+		// =========================================================
+
+		$sheet->getStyleByColumnAndRow(
+			1,
+			3,
+			$jumlah_kolom,
+			$baris - 1
+		)->applyFromArray($borderStyle);
+
+
+		// =========================================================
+		// FORMAT NILAI
+		// =========================================================
+
+		$sheet->getStyleByColumnAndRow(
+			$kolom_nilai,
+			3,
+			$kolom_nilai,
+			$baris - 1
+		)
+		->getNumberFormat()
+		->setFormatCode('0.00');
+
+
+		// =========================================================
+		// ALIGNMENT VERTICAL
+		// =========================================================
+
+		$sheet->getStyleByColumnAndRow(
+			1,
+			1,
+			$jumlah_kolom,
+			$baris - 1
+		)
+		->getAlignment()
+		->setVertical(
+			\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER
+		);
+
+
+		// =========================================================
+		// CENTER
+		// =========================================================
+
+		$sheet->getStyleByColumnAndRow(
+			1,
+			1,
+			$jumlah_kolom,
+			$baris - 1
+		)
+		->getAlignment()
+		->setHorizontal(
+			\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER
+		);
+
+
+		// =========================================================
+		// NAMA SISWA RATA KIRI
+		// =========================================================
+
+		$sheet->getStyleByColumnAndRow(
+			$kolom_nama,
+			3,
+			$kolom_nama,
+			$baris - 1
+		)
+		->getAlignment()
+		->setHorizontal(
+			\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT
+		);
+
+
+		// =========================================================
+		// UKURAN KOLOM
+		// =========================================================
+
+		// No
+		$sheet->getColumnDimension('A')
+			->setWidth(6);
+
+
+		// Nama siswa
+		$sheet->getColumnDimension(
+			\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(
+				$kolom_nama
+			)
+		)->setWidth(25);
+
+
+		// Kolom soal
+		for ($i = 3; $i < $kolom_benar; $i++) {
+
+			$sheet->getColumnDimension(
+				\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(
+					$i
+				)
+			)->setWidth(8);
+		}
+
+
+		// Jumlah benar
+		$sheet->getColumnDimension(
+			\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(
+				$kolom_benar
+			)
+		)->setWidth(15);
+
+
+		// Nilai
+		$sheet->getColumnDimension(
+			\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(
+				$kolom_nilai
+			)
+		)->setWidth(12);
+
+
+		// =========================================================
+		// TINGGI BARIS
+		// =========================================================
+
+		$sheet->getRowDimension(1)
+			->setRowHeight(25);
+
+		$sheet->getRowDimension(2)
+			->setRowHeight(22);
+
+
+		// =========================================================
+		// FREEZE HEADER
+		// =========================================================
+
+		$sheet->freezePane('C3');
+
+
+		// =========================================================
+		// PRINT SETUP
+		// =========================================================
+
+		$sheet->getPageSetup()
+			->setOrientation(
+				\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::ORIENTATION_LANDSCAPE
+			);
+
+		$sheet->getPageSetup()
+			->setPaperSize(
+				\PhpOffice\PhpSpreadsheet\Worksheet\PageSetup::PAPERSIZE_A4
+			);
+
+		$sheet->getPageSetup()
+			->setFitToWidth(1);
+
+		$sheet->getPageSetup()
+			->setFitToHeight(0);
+
+		$sheet->getPageSetup()
+			->setScale(90);
+
+
+		// =========================================================
+		// DOWNLOAD
+		// =========================================================
+
+		$filename = 'hasil_ujian_' . $uri3 . '.xlsx';
+
+		// Bersihkan output buffer agar file Excel tidak corrupt
+		if (ob_get_length()) {
+			ob_end_clean();
+		}
+
+		header(
+			'Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+		);
+
+		header(
+			'Content-Disposition: attachment;filename="' . $filename . '"'
+		);
+
+		header('Cache-Control: max-age=0');
+
+		$writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx(
+			$spreadsheet
+		);
+
+		$writer->save('php://output');
+
+		exit;
+	}
 	/* == SISWA == */
 	public function ikuti_ujian()
 	{

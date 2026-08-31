@@ -6,6 +6,7 @@ $uri4 = $this->uri->segment(4);
   <div class="panel panel-info">
     <div class="panel-heading"><b>DAFTAR HASIL UJIAN</b>
       <div class="tombol-kanan">
+        <a href='<?php echo base_url(); ?>adm/hasil_ujian_cetak_detail/<?php echo $uri4; ?>' class='btn btn-primary btn-sm' target='_blank'><i class='glyphicon glyphicon-print'></i>&nbsp;&nbsp; Cetak Detail</a>
         <a href='<?php echo base_url(); ?>adm/hasil_ujian_cetak/<?php echo $uri4; ?>' class='btn btn-primary btn-sm' target='_blank'><i class='glyphicon glyphicon-print'></i>&nbsp;&nbsp; Cetak</a>
       </div>
     </div>
