@@ -2,8 +2,8 @@
 $active_group                 = 'default';
 $active_record                 = TRUE;
 $db['default']['hostname'] = 'localhost';
-$db['default']['username'] = 'u891355450_spmb2026';
-$db['default']['password'] = 'Spmb2026';
+$db['default']['username'] = 'sa';
+$db['default']['password'] = 'P@ssw0rd123';
 $db['default']['database'] = 'u891355450_spmb2026';
 $db['default']['dbdriver'] = 'mysqli';
 $db['default']['dbprefix'] = '';
