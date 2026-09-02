@@ -58,166 +58,474 @@ class Adm extends CI_Controller
 		$nip_kepala = $this->config->item('nip_kepala');
 
 		$pdf = new FPDF('P', 'mm', 'A4');
+
+		// =========================================================
+		// KONFIGURASI
+		// =========================================================
+
+		$pdf->SetAutoPageBreak(false);
 		$pdf->AddPage();
-		foreach ($data as $load) {
-			//kop kartu
-			$pdf->SetFont('Arial', 'B', 10);
-			$pdf->Cell(90, 0.1, '', 1, 1, 'C');
 
-			$pdf->Cell(0.1, 2, '', 1, 0);
-			$pdf->Cell(89.8, 2, '', 0, 0);
-			$pdf->Cell(0.1, 2, '', 1, 1);
+		$xKiri          = 10;
+		$xKanan         = 110;
+		$yAwal          = 10;
 
-			$pdf->SetFont('Arial', 'B', 10);
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(89.8, 3, 'KARTU PESERTA UJIAN', 0, 0, 'C');
-			$pdf->Cell(0.1, 3, '', 1, 1);
+		$lebarKartu     = 90;
+		$tinggiKartu    = 60;
+		$jarakVertikal 	= 10;
 
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(89.8, 3, $nama_sekolah, 0, 0, 'C');
-			$pdf->Cell(0.1, 3, '', 1, 1);
+		$marginBawah    = 10;
 
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(89.8, 3, $nama_ujian, 0, 0, 'C');
-			$pdf->Cell(0.1, 3, '', 1, 1);
 
-			$pdf->Cell(0.1, 2, '', 1, 0);
-			$pdf->Cell(89.8, 2, '', 0, 0);
-			$pdf->Cell(0.1, 2, '', 1, 1);
+		// =========================================================
+		// HELPER CELL
+		// =========================================================
+		// Setiap baris kartu selalu dimulai dari $xKartu.
+		// Ini penting karena Cell(..., ln=1) akan kembali ke
+		// posisi margin kiri FPDF.
+		// =========================================================
 
-			$pdf->Cell(90, 0.1, '', 1, 1, 'C');
+		function kartuCell($pdf, $xKartu, $cells)
+		{
+			$pdf->SetX($xKartu);
 
-			$pdf->Cell(0.1, 2, '', 1, 0);
-			$pdf->Cell(89.8, 2, '', 0, 0);
-			$pdf->Cell(0.1, 2, '', 1, 1);
-			// $pdf->HeaderKartu();
-			//konten kartu
-			$pdf->SetFont('Arial', '', 7);
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(2.8, 3, '', 0, 0);
-			$pdf->Cell(20, 3, 'NAMA', 0, 0);
-			$pdf->Cell(67, 3, ': ' . $load['nama'], 0, 0, 'L');
-			$pdf->Cell(0.1, 3, '', 1, 1);
+			foreach ($cells as $cell) {
 
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(2.8, 3, '', 0, 0);
-			$pdf->Cell(20, 3, 'KELAS', 0, 0);
-			$pdf->Cell(67, 3, ': ' . $load['jurusan'] . ' ' . $load['id_jurusan'], 0, 0, 'L');
-			$pdf->Cell(0.1, 3, '', 1, 1);
+				$width  = $cell[0];
+				$height = $cell[1];
+				$text   = isset($cell[2]) ? $cell[2] : '';
+				$border = isset($cell[3]) ? $cell[3] : 0;
+				$ln     = isset($cell[4]) ? $cell[4] : 0;
+				$align  = isset($cell[5]) ? $cell[5] : '';
 
-			$pdf->Cell(0.1, 2, '', 1, 0);
-			$pdf->Cell(89.8, 2, '', 0, 0);
-			$pdf->Cell(0.1, 2, '', 1, 1);
-
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(2.8, 3, '', 0, 0);
-			$pdf->Cell(20, 3, 'USERNAME', 0, 0);
-			$pdf->Cell(67, 3, ': ' . $load['nim'], 0, 0, 'L');
-			$pdf->Cell(0.1, 3, '', 1, 1);
-
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(2.8, 3, '', 0, 0);
-			$pdf->Cell(20, 3, 'PASSWORD', 0, 0);
-			$pdf->Cell(67, 3, ': ' . $load['nim'], 0, 0, 'L');
-			$pdf->Cell(0.1, 3, '', 1, 1);
-
-			$pdf->Cell(0.1, 2, '', 1, 0);
-			$pdf->Cell(89.8, 2, '', 0, 0);
-			$pdf->Cell(0.1, 2, '', 1, 1);
-
-			//footer kartu
-			// $pdf->FooterKartu();
-			$pdf->Cell(10, 0, '', 0, 0);
-			$pdf->Cell(17, 0, '', 1, 0);
-			$pdf->Cell(63, 0, '', 0, 1);
-
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(9.8, 3, '', 0, 0);
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(16.9, 3, '', 0, 0);
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(13.9, 3, '', 0, 0);
-			$pdf->Cell(49, 3, $tgl_ujian, 0, 0);
-			$pdf->Cell(0.1, 3, '', 1, 1);
-
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(9.8, 3, '', 0, 0);
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(16.9, 3, '', 0, 0);
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(13.9, 3, '', 0, 0);
-			$pdf->Cell(49, 3, 'Kepala ' . $nama_sekolah, 0, 0);
-			$pdf->Cell(0.1, 3, '', 1, 1);
-
-			$pdf->Cell(0.1, 2.5, '', 1, 0);
-			$pdf->Cell(9.8, 2.5, '', 0, 0);
-			$pdf->Cell(0.1, 2.5, '', 1, 0);
-			$pdf->Cell(16.9, 2.5, '', 0, 0, 'C');
-			$pdf->Cell(0.1, 2.5, '', 1, 0);
-			$pdf->Cell(13.9, 2.5, '', 0, 0);
-			$pdf->Cell(49, 2.5, '', 0, 0);
-			$pdf->Cell(0.1, 2.5, '', 1, 1);
-
-			$pdf->Cell(0.1, 2.5, '', 1, 0);
-			$pdf->Cell(9.8, 2.5, '', 0, 0);
-			$pdf->Cell(0.1, 2.5, '', 1, 0);
-			$pdf->Cell(16.9, 2.5, 'FOTO', 0, 0, 'C');
-			$pdf->Cell(0.1, 2.5, '', 1, 0);
-			$pdf->Cell(13.9, 2.5, '', 0, 0);
-			$pdf->Cell(49, 2.5, '', 0, 0);
-			$pdf->Cell(0.1, 2.5, '', 1, 1);
-
-			$pdf->Cell(0.1, 2.5, '', 1, 0);
-			$pdf->Cell(9.8, 2.53, '', 0, 0);
-			$pdf->Cell(0.1, 2.5, '', 1, 0);
-			$pdf->Cell(16.9, 2.5, '2 x 3', 0, 0, 'C');
-			$pdf->Cell(0.1, 2.5, '', 1, 0);
-			$pdf->Cell(13.9, 2.5, '', 0, 0);
-			$pdf->Cell(49, 2.5, '', 0, 0);
-			$pdf->Cell(0.1, 2.5, '', 1, 1);
-
-			$pdf->Cell(0.1, 2.5, '', 1, 0);
-			$pdf->Cell(9.8, 2.5, '', 0, 0);
-			$pdf->Cell(0.1, 2.5, '', 1, 0);
-			$pdf->Cell(16.9, 2.5, '', 0, 0, 'C');
-			$pdf->Cell(0.1, 2.5, '', 1, 0);
-			$pdf->Cell(13.9, 2.5, '', 0, 0);
-			$pdf->Cell(49, 2.5, '', 0, 0);
-			$pdf->Cell(0.1, 2.5, '', 1, 1);
-
-			$pdf->SetFont('Arial', 'BU', 7);
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(9.8, 3, '', 0, 0);
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(16.9, 3, '', 0, 0);
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(13.9, 3, '', 0, 0);
-			$pdf->Cell(49, 3, $nama_kepala, 0, 0);
-			$pdf->Cell(0.1, 3, '', 1, 1);
-
-			$pdf->SetFont('Arial', 'B', 7);
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(9.8, 3, '', 0, 0);
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(16.9, 3, '', 0, 0);
-			$pdf->Cell(0.1, 3, '', 1, 0);
-			$pdf->Cell(13.9, 3, '', 0, 0);
-			$pdf->Cell(49, 3, 'NIP. ' . $nip_kepala, 0, 0);
-			$pdf->Cell(0.1, 3, '', 1, 1);
-
-			$pdf->Cell(10, 0, '', 0, 0);
-			$pdf->Cell(17, 0, '', 1, 0);
-			$pdf->Cell(63, 0, '', 0, 1);
-
-			$pdf->Cell(0.1, 2, '', 1, 0);
-			$pdf->Cell(89.8, 2, '', 0, 0);
-			$pdf->Cell(0.1, 2, '', 1, 1);
-
-			$pdf->SetFont('Arial', '', 10);
-			$pdf->Cell(90, 0, '', 1, 1);
-			$pdf->Ln(13);
+				$pdf->Cell(
+					$width,
+					$height,
+					$text,
+					$border,
+					$ln,
+					$align
+				);
+			}
 		}
-		$pdf->Output('cetak kartu.pdf','I');
+
+
+		// =========================================================
+		// LOOP DATA
+		// =========================================================
+
+		foreach ($data as $i => $load) {
+
+			// ---------------------------------------------------------
+			// Tentukan kolom
+			// ---------------------------------------------------------
+
+			if ($i % 2 == 0) {
+
+				// Kartu kiri
+				$xKartu = $xKiri;
+
+			} else {
+
+				// Kartu kanan
+				$xKartu = $xKanan;
+			}
+
+
+			// ---------------------------------------------------------
+			// Kalau kartu kiri baru dimulai, cek apakah masih muat
+			// ---------------------------------------------------------
+
+			if ($i % 2 == 0) {
+
+				if ($yAwal + $tinggiKartu > 297 - $marginBawah) {
+
+					$pdf->AddPage();
+
+					$yAwal = 10;
+				}
+			}
+
+
+			// ---------------------------------------------------------
+			// POSISI AWAL KARTU
+			// ---------------------------------------------------------
+
+			$pdf->SetXY($xKartu, $yAwal);
+
+
+			// =========================================================
+			// LOGO
+			// =========================================================
+
+			// Logo sekolah - kiri atas kartu
+			$pdf->Image(
+				FCPATH . '___/img/smk5-new.png',
+				$xKartu + 2,
+				$yAwal + 2,
+				8
+			);
+
+			// Logo provinsi - kanan atas kartu
+			$pdf->Image(
+				FCPATH . '___/img/PROVINSI-new.png',
+				$xKartu + 80,
+				$yAwal + 2,
+				8
+			);
+
+
+			// =========================================================
+			// KOP KARTU
+			// =========================================================
+
+			$pdf->SetFont('Arial', 'B', 8);
+
+			// Garis atas
+			kartuCell($pdf, $xKartu, [
+				[90, 0.1, '', 'T', 1]
+			]);
+
+
+			// Spasi
+			kartuCell($pdf, $xKartu, [
+				[0.1, 2, '', 1, 0],
+				[89.8, 2, '', 0, 0],
+				[0.1, 2, '', 1, 1]
+			]);
+
+
+			// Judul
+			kartuCell($pdf, $xKartu, [
+				[0.1, 3, '', 1, 0],
+				[89.8, 3, 'KARTU PESERTA UJIAN', 0, 0, 'C'],
+				[0.1, 3, '', 1, 1]
+			]);
+
+
+			// Nama sekolah
+			kartuCell($pdf, $xKartu, [
+				[0.1, 3, '', 1, 0],
+				[89.8, 3, $nama_sekolah, 0, 0, 'C'],
+				[0.1, 3, '', 1, 1]
+			]);
+
+
+			// Nama ujian
+			kartuCell($pdf, $xKartu, [
+				[0.1, 3, '', 1, 0],
+				[89.8, 3, $nama_ujian, 0, 0, 'C'],
+				[0.1, 3, '', 1, 1]
+			]);
+
+
+			// Spasi bawah kop
+			kartuCell($pdf, $xKartu, [
+				[0.1, 2, '', 1, 0],
+				[89.8, 2, '', 0, 0],
+				[0.1, 2, '', 1, 1]
+			]);
+
+
+			// Garis bawah kop
+			kartuCell($pdf, $xKartu, [
+				[90, 0.1, '', 1, 1]
+			]);
+
+
+			// Spasi
+			kartuCell($pdf, $xKartu, [
+				[0.1, 2, '', 1, 0],
+				[89.8, 2, '', 0, 0],
+				[0.1, 2, '', 1, 1]
+			]);
+
+
+			// =========================================================
+			// KONTEN KARTU
+			// =========================================================
+
+			$pdf->SetFont('Arial', '', 7);
+
+
+			// NAMA
+			kartuCell($pdf, $xKartu, [
+				[0.1, 3, '', 1, 0],
+				[2.8, 3, '', 0, 0],
+				[20, 3, 'NAMA', 0, 0],
+				[67, 3, ': ' . $load['nama'], 0, 0, 'L'],
+				[0.1, 3, '', 1, 1]
+			]);
+
+
+			// KELAS
+			kartuCell($pdf, $xKartu, [
+				[0.1, 3, '', 1, 0],
+				[2.8, 3, '', 0, 0],
+				[20, 3, 'KELAS', 0, 0],
+				[
+					67,
+					3,
+					': ' . $load['jurusan'] . ' ' . $load['id_jurusan'],
+					0,
+					0,
+					'L'
+				],
+				[0.1, 3, '', 1, 1]
+			]);
+
+
+			// Spasi
+			kartuCell($pdf, $xKartu, [
+				[0.1, 2, '', 1, 0],
+				[89.8, 2, '', 0, 0],
+				[0.1, 2, '', 1, 1]
+			]);
+
+
+			// USERNAME
+			kartuCell($pdf, $xKartu, [
+				[0.1, 3, '', 1, 0],
+				[2.8, 3, '', 0, 0],
+				[20, 3, 'USERNAME', 0, 0],
+				[67, 3, ': ' . $load['nim'], 0, 0, 'L'],
+				[0.1, 3, '', 1, 1]
+			]);
+
+
+			// PASSWORD
+			kartuCell($pdf, $xKartu, [
+				[0.1, 3, '', 1, 0],
+				[2.8, 3, '', 0, 0],
+				[20, 3, 'PASSWORD', 0, 0],
+				[67, 3, ': ' . $load['nim'], 0, 0, 'L'],
+				[0.1, 3, '', 1, 1]
+			]);
+
+
+			// Spasi
+			kartuCell($pdf, $xKartu, [
+				[0.1, 2, '', 1, 0],
+				[89.8, 2, '', 0, 0],
+				[0.1, 2, '', 1, 1]
+			]);
+
+
+			// =========================================================
+			// FOOTER KARTU
+			// =========================================================
+
+			// Garis / kotak foto bagian atas
+			kartuCell($pdf, $xKartu, [
+				[10, 0, '', 0, 0],
+				[17, 0, '', 1, 0],
+				[63, 0, '', 0, 1]
+			]);
+
+
+			// Tanggal ujian
+			kartuCell($pdf, $xKartu, [
+				[0.1, 3, '', 1, 0],
+				[9.8, 3, '', 0, 0],
+				[0.1, 3, '', 1, 0],
+				[16.9, 3, '', 0, 0],
+				[0.1, 3, '', 1, 0],
+				[13.9, 3, '', 0, 0],
+				[49, 3, $tgl_ujian, 0, 0],
+				[0.1, 3, '', 1, 1]
+			]);
+
+
+			// Kepala sekolah
+			kartuCell($pdf, $xKartu, [
+				[0.1, 3, '', 1, 0],
+				[9.8, 3, '', 0, 0],
+				[0.1, 3, '', 1, 0],
+				[16.9, 3, '', 0, 0],
+				[0.1, 3, '', 1, 0],
+				[13.9, 3, '', 0, 0],
+				[49, 3, 'Kepala ' . $nama_sekolah, 0, 0],
+				[0.1, 3, '', 1, 1]
+			]);
+
+
+			// Spasi
+			kartuCell($pdf, $xKartu, [
+				[0.1, 2.5, '', 1, 0],
+				[9.8, 2.5, '', 0, 0],
+				[0.1, 2.5, '', 1, 0],
+				[16.9, 2.5, '', 0, 0, 'C'],
+				[0.1, 2.5, '', 1, 0],
+				[13.9, 2.5, '', 0, 0],
+				[49, 2.5, '', 0, 0],
+				[0.1, 2.5, '', 1, 1]
+			]);
+
+
+			// FOTO
+			kartuCell($pdf, $xKartu, [
+				[0.1, 2.5, '', 1, 0],
+				[9.8, 2.5, '', 0, 0],
+				[0.1, 2.5, '', 1, 0],
+				[16.9, 2.5, 'FOTO', 0, 0, 'C'],
+				[0.1, 2.5, '', 1, 0],
+				[13.9, 2.5, '', 0, 0],
+				[49, 2.5, '', 0, 0],
+				[0.1, 2.5, '', 1, 1]
+			]);
+
+
+			// 2 x 3
+			kartuCell($pdf, $xKartu, [
+				[0.1, 2.5, '', 1, 0],
+				[9.8, 2.53, '', 0, 0],
+				[0.1, 2.5, '', 1, 0],
+				[16.9, 2.5, '2 x 3', 0, 0, 'C'],
+				[0.1, 2.5, '', 1, 0],
+				[13.9, 2.5, '', 0, 0],
+				[49, 2.5, '', 0, 0],
+				[0.1, 2.5, '', 1, 1]
+			]);
+
+
+			// Spasi foto
+			kartuCell($pdf, $xKartu, [
+				[0.1, 2.5, '', 1, 0],
+				[9.8, 2.5, '', 0, 0],
+				[0.1, 2.5, '', 1, 0],
+				[16.9, 2.5, '', 0, 0, 'C'],
+				[0.1, 2.5, '', 1, 0],
+				[13.9, 2.5, '', 0, 0],
+				[49, 2.5, '', 0, 0],
+				[0.1, 2.5, '', 1, 1]
+			]);
+
+
+			// Nama kepala sekolah
+			$pdf->SetFont('Arial', 'BU', 7);
+
+			kartuCell($pdf, $xKartu, [
+				[0.1, 3, '', 1, 0],
+				[9.8, 3, '', 0, 0],
+				[0.1, 3, '', 1, 0],
+				[16.9, 3, '', 0, 0],
+				[0.1, 3, '', 1, 0],
+				[13.9, 3, '', 0, 0],
+				[49, 3, $nama_kepala, 0, 0],
+				[0.1, 3, '', 1, 1]
+			]);
+
+
+			// NIP kepala sekolah
+			$pdf->SetFont('Arial', 'B', 7);
+
+			kartuCell($pdf, $xKartu, [
+				[0.1, 3, '', 1, 0],
+				[9.8, 3, '', 0, 0],
+				[0.1, 3, '', 1, 0],
+				[16.9, 3, '', 0, 0],
+				[0.1, 3, '', 1, 0],
+				[13.9, 3, '', 0, 0],
+				[49, 3, 'NIP. ' . $nip_kepala, 0, 0],
+				[0.1, 3, '', 1, 1]
+			]);
+
+
+			// Garis bawah foto
+			kartuCell($pdf, $xKartu, [
+				[10, 0, '', 0, 0],
+				[17, 0, '', 1, 0],
+				[63, 0, '', 0, 1]
+			]);
+
+
+			// Spasi bawah
+			kartuCell($pdf, $xKartu, [
+				[0.1, 2, '', 1, 0],
+				[89.8, 2, '', 0, 0],
+				[0.1, 2, '', 1, 1]
+			]);
+
+
+			// Garis paling bawah
+			$pdf->SetFont('Arial', '', 10);
+
+			kartuCell($pdf, $xKartu, [
+				[90, 0, '', 0, 1]
+			]);
+
+			// =========================================================
+			// TAMBAHKAN SISA TINGGI KARTU
+			// =========================================================
+
+			$tinggiAktual = $pdf->GetY() - $yAwal;
+
+			$sisaTinggi = $tinggiKartu - $tinggiAktual;
+
+			if ($sisaTinggi > 0) {
+
+				$pdf->SetX($xKartu);
+
+				// Border kiri
+				$pdf->Cell(
+					0.1,
+					$sisaTinggi,
+					'',
+					'L',
+					0
+				);
+
+				// Area tengah tanpa border
+				$pdf->Cell(
+					89.8,
+					$sisaTinggi,
+					'',
+					0,
+					0
+				);
+
+				// Border kanan
+				$pdf->Cell(
+					0.1,
+					$sisaTinggi,
+					'',
+					'R',
+					1
+				);
+			}
+
+			// =========================================================
+			// BORDER BAWAH FINAL
+			// =========================================================
+
+			$pdf->SetX($xKartu);
+
+			$pdf->Cell(
+				90,
+				0,
+				'',
+				'B',
+				1
+			);
+
+
+			// =========================================================
+			// SETELAH KARTU KANAN
+			// PINDAH KE BARIS BERIKUTNYA
+			// =========================================================
+
+			if ($i % 2 == 1) {
+
+				$yAwal += $tinggiKartu + $jarakVertikal;
+			}
+		}
+
+
+		// =========================================================
+		// OUTPUT
+		// =========================================================
+
+		$pdf->Output('cetak kartu.pdf', 'I');
 	}
 	/* == ADMIN == */
 	public function m_siswa()
