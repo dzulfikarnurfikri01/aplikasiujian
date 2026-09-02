@@ -1496,6 +1496,26 @@ class Adm extends CI_Controller
 
 		$uri3 = $this->uri->segment(3);
 
+		$detil_tes = $this->db->query("
+			SELECT
+				m_mapel.nama AS namaMapel,
+				m_guru.nama AS nama_guru,
+				tr_guru_tes.*
+			FROM tr_guru_tes
+			INNER JOIN m_mapel ON tr_guru_tes.id_mapel = m_mapel.id
+			INNER JOIN m_guru ON tr_guru_tes.id_guru = m_guru.id
+			WHERE tr_guru_tes.id = '$uri3'
+		")->row();
+
+		$statistik = $this->db->query("
+			SELECT
+				MAX(nilai) AS max_,
+				MIN(nilai) AS min_,
+				AVG(nilai) AS avg_
+			FROM tr_ikut_ujian
+			WHERE id_tes = '$uri3'
+		")->row();
+
 		// =========================================================
 		// HASIL UJIAN
 		// =========================================================
@@ -1545,26 +1565,11 @@ class Adm extends CI_Controller
 
 		if (!empty($list_soal)) {
 
-			$data_soal = $this->db
+			$soal = $this->db
 				->where_in('id', $list_soal)
+				->order_by('id', 'ASC')
 				->get('m_soal')
 				->result();
-
-			$soal_index = array();
-
-			foreach ($data_soal as $row) {
-				$soal_index[$row->id] = $row;
-			}
-
-			// Pertahankan urutan soal
-			foreach ($list_soal as $id_soal) {
-
-				$id_soal = (int) $id_soal;
-
-				if (isset($soal_index[$id_soal])) {
-					$soal[] = $soal_index[$id_soal];
-				}
-			}
 		}
 
 
@@ -1579,6 +1584,109 @@ class Adm extends CI_Controller
 		$sheet = $spreadsheet->getActiveSheet();
 
 		$sheet->setTitle('Hasil Ujian');
+
+		// =========================================================
+		// DETAIL UJIAN
+		// =========================================================
+
+		// -----------------------------------------
+		// Mata Pelajaran
+		// -----------------------------------------
+
+		$sheet->mergeCells('A1:B1');
+		$sheet->setCellValue('A1', 'Mata Pelajaran');
+
+		$sheet->mergeCells('C1:E1');
+		$sheet->setCellValue('C1', $detil_tes->namaMapel);
+
+
+		// -----------------------------------------
+		// Nama Guru
+		// -----------------------------------------
+
+		$sheet->mergeCells('A2:B2');
+		$sheet->setCellValue('A2', 'Nama Guru');
+
+		$sheet->mergeCells('C2:E2');
+		$sheet->setCellValue('C2', $detil_tes->nama_guru);
+
+
+		// -----------------------------------------
+		// Nama Ujian
+		// -----------------------------------------
+
+		$sheet->mergeCells('A3:B3');
+		$sheet->setCellValue('A3', 'Nama Ujian');
+
+		$sheet->mergeCells('C3:E3');
+		$sheet->setCellValue(
+			'C3',
+			'['.$detil_tes->kelas.'] - ['.$detil_tes->jurusan.'] - '.$detil_tes->nama_ujian
+		);
+
+
+		// -----------------------------------------
+		// Jumlah Soal
+		// -----------------------------------------
+
+		$sheet->mergeCells('A4:B4');
+		$sheet->setCellValue('A4', 'Jumlah Soal');
+
+		$sheet->mergeCells('C4:E4');
+		$sheet->setCellValue('C4', $detil_tes->jumlah_soal);
+
+
+		// -----------------------------------------
+		// Waktu
+		// -----------------------------------------
+
+		$sheet->mergeCells('A5:B5');
+		$sheet->setCellValue('A5', 'Waktu');
+
+		$sheet->mergeCells('C5:E5');
+		$sheet->setCellValue('C5', $detil_tes->waktu.' menit');
+
+
+		// -----------------------------------------
+		// Nilai Tertinggi
+		// -----------------------------------------
+
+		$sheet->mergeCells('A6:B6');
+		$sheet->setCellValue('A6', 'Nilai Tertinggi');
+
+		$sheet->mergeCells('C6:E6');
+		$sheet->setCellValue('C6', (float) $statistik->max_);
+
+
+		// -----------------------------------------
+		// Nilai Terendah
+		// -----------------------------------------
+
+		$sheet->mergeCells('A7:B7');
+		$sheet->setCellValue('A7', 'Nilai Terendah');
+
+		$sheet->mergeCells('C7:E7');
+		$sheet->setCellValue('C7', (float) $statistik->min_);
+
+
+		// -----------------------------------------
+		// Rata-rata
+		// -----------------------------------------
+
+		$sheet->mergeCells('A8:B8');
+		$sheet->setCellValue('A8', 'Rata-rata');
+
+		$sheet->mergeCells('C8:E8');
+		$sheet->setCellValue('C8', (float) $statistik->avg_);
+
+
+		// =========================================================
+		// FORMAT NILAI 2 DESIMAL
+		// =========================================================
+
+		$sheet->getStyle('C6:C8')
+			->getNumberFormat()
+			->setFormatCode('0.00');
 
 
 		// =========================================================
@@ -1616,67 +1724,77 @@ class Adm extends CI_Controller
 		$kolom = 1;
 
 
-		// ---------------------------------------------------------
+		// =========================================================
 		// NO
-		// ---------------------------------------------------------
+		// =========================================================
+
+		$kolom_no = $kolom;
 
 		$sheet->setCellValueByColumnAndRow(
 			$kolom,
-			1,
+			13,
 			'No'
 		);
 
 		$sheet->mergeCellsByColumnAndRow(
 			$kolom,
-			1,
+			13,
 			$kolom,
-			2
-		);
-
-		$kolom++;
-
-
-		// ---------------------------------------------------------
-		// NAMA SISWA
-		// ---------------------------------------------------------
-
-		$kolom_nama = $kolom;
-
-		$sheet->setCellValueByColumnAndRow(
-			$kolom,
-			1,
-			'Nama Siswa'
-		);
-
-		$sheet->mergeCellsByColumnAndRow(
-			$kolom,
-			1,
-			$kolom,
-			2
+			14
 		);
 
 		$kolom++;
 
 
 		// =========================================================
-		// NOMOR SOAL + KUNCI
+		// NAMA SISWA
+		// =========================================================
+
+		$kolom_nama = $kolom;
+
+		$sheet->setCellValueByColumnAndRow(
+			$kolom,
+			13,
+			'Nama Siswa'
+		);
+
+		$sheet->mergeCellsByColumnAndRow(
+			$kolom,
+			13,
+			$kolom,
+			14
+		);
+
+		$kolom++;
+
+
+		// =========================================================
+		// NOMOR SOAL + KUNCI JAWABAN
 		// =========================================================
 
 		foreach ($soal as $index => $data_soal) {
 
 			$nomor_soal = $index + 1;
 
+			// ---------------------------------------------
 			// Nomor soal
+			// ---------------------------------------------
+
 			$sheet->setCellValueByColumnAndRow(
 				$kolom,
-				1,
+				13,
 				$nomor_soal
 			);
 
+
+			// ---------------------------------------------
 			// Kunci jawaban
+			// ---------------------------------------------
+
 			$kunci = '';
 
 			if (isset($data_soal->jawaban)) {
+
 				$kunci = strtoupper(
 					trim($data_soal->jawaban)
 				);
@@ -1684,7 +1802,7 @@ class Adm extends CI_Controller
 
 			$sheet->setCellValueByColumnAndRow(
 				$kolom,
-				2,
+				14,
 				$kunci
 			);
 
@@ -1700,15 +1818,15 @@ class Adm extends CI_Controller
 
 		$sheet->setCellValueByColumnAndRow(
 			$kolom,
-			1,
+			13,
 			'Jumlah Benar'
 		);
 
 		$sheet->mergeCellsByColumnAndRow(
 			$kolom,
-			1,
+			13,
 			$kolom,
-			2
+			14
 		);
 
 		$kolom++;
@@ -1722,31 +1840,36 @@ class Adm extends CI_Controller
 
 		$sheet->setCellValueByColumnAndRow(
 			$kolom,
-			1,
+			13,
 			'Nilai'
 		);
 
 		$sheet->mergeCellsByColumnAndRow(
 			$kolom,
-			1,
+			13,
 			$kolom,
-			2
+			14
 		);
 
 		$kolom++;
 
 
 		// =========================================================
-		// STYLE HEADER
+		// JUMLAH KOLOM TERAKHIR
 		// =========================================================
 
 		$jumlah_kolom = $kolom - 1;
 
+
+		// =========================================================
+		// STYLE HEADER
+		// =========================================================
+
 		$sheet->getStyleByColumnAndRow(
 			1,
-			1,
+			13,
 			$jumlah_kolom,
-			2
+			14
 		)->applyFromArray($headerStyle);
 
 
@@ -1754,10 +1877,11 @@ class Adm extends CI_Controller
 		// DATA SISWA
 		// =========================================================
 
-		$baris = 3;
+		$baris = 15;
 		$no = 1;
 
 		foreach ($hasil as $siswa) {
+
 
 			// =====================================================
 			// PARSING JAWABAN SISWA
@@ -1794,10 +1918,15 @@ class Adm extends CI_Controller
 
 
 			// =====================================================
-			// NOMOR
+			// KOLOM DATA
 			// =====================================================
 
 			$kolom_data = 1;
+
+
+			// =====================================================
+			// NO
+			// =====================================================
 
 			$sheet->setCellValueByColumnAndRow(
 				$kolom_data,
@@ -1815,7 +1944,9 @@ class Adm extends CI_Controller
 			$sheet->setCellValueByColumnAndRow(
 				$kolom_data,
 				$baris,
-				$siswa->nama
+				isset($siswa->nama)
+					? $siswa->nama
+					: ''
 			);
 
 			$kolom_data++;
@@ -1832,6 +1963,7 @@ class Adm extends CI_Controller
 				$jawaban = '';
 
 				if (isset($jawaban_siswa[$id_soal])) {
+
 					$jawaban = $jawaban_siswa[$id_soal];
 				}
 
@@ -1852,7 +1984,9 @@ class Adm extends CI_Controller
 			$sheet->setCellValueByColumnAndRow(
 				$kolom_data,
 				$baris,
-				$siswa->jml_benar
+				isset($siswa->jml_benar)
+					? $siswa->jml_benar
+					: 0
 			);
 
 			$kolom_data++;
@@ -1862,14 +1996,27 @@ class Adm extends CI_Controller
 			// NILAI
 			// =====================================================
 
+			$nilai = 0;
+
+			if (isset($siswa->nilai)) {
+				$nilai = (float) $siswa->nilai;
+			}
+
 			$sheet->setCellValueExplicit(
 				$sheet->getCellByColumnAndRow(
 					$kolom_data,
 					$baris
 				)->getCoordinate(),
-				(float) $siswa->nilai,
+				$nilai,
 				\PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC
 			);
+
+			$kolom_data++;
+
+
+			// =====================================================
+			// NEXT
+			// =====================================================
 
 			$baris++;
 			$no++;
@@ -1877,56 +2024,55 @@ class Adm extends CI_Controller
 
 
 		// =========================================================
-		// BORDER DATA
+		// RANGE DATA TERAKHIR
 		// =========================================================
 
-		$sheet->getStyleByColumnAndRow(
-			1,
-			3,
-			$jumlah_kolom,
-			$baris - 1
-		)->applyFromArray($borderStyle);
+		$baris_akhir = $baris - 1;
 
 
 		// =========================================================
-		// FORMAT NILAI
+		// BORDER HEADER + DATA
 		// =========================================================
 
-		$sheet->getStyleByColumnAndRow(
-			$kolom_nilai,
-			3,
-			$kolom_nilai,
-			$baris - 1
-		)
-		->getNumberFormat()
-		->setFormatCode('0.00');
+		if ($baris_akhir >= 15) {
+
+			$sheet->getStyleByColumnAndRow(
+				1,
+				13,
+				$jumlah_kolom,
+				$baris_akhir
+			)->applyFromArray($borderStyle);
+		}
 
 
 		// =========================================================
 		// ALIGNMENT VERTICAL
 		// =========================================================
 
-		$sheet->getStyleByColumnAndRow(
-			1,
-			1,
-			$jumlah_kolom,
-			$baris - 1
-		)
-		->getAlignment()
-		->setVertical(
-			\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER
-		);
+		if ($baris_akhir >= 15) {
+
+			$sheet->getStyleByColumnAndRow(
+				1,
+				13,
+				$jumlah_kolom,
+				$baris_akhir
+			)
+			->getAlignment()
+			->setVertical(
+				\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER
+			);
+		}
 
 
 		// =========================================================
-		// CENTER
+		// ALIGNMENT HEADER
 		// =========================================================
 
 		$sheet->getStyleByColumnAndRow(
 			1,
-			1,
+			13,
 			$jumlah_kolom,
-			$baris - 1
+			14
 		)
 		->getAlignment()
 		->setHorizontal(
@@ -1935,31 +2081,76 @@ class Adm extends CI_Controller
 
 
 		// =========================================================
+		// ALIGNMENT DATA
+		// =========================================================
+
+		if ($baris_akhir >= 15) {
+
+			$sheet->getStyleByColumnAndRow(
+				1,
+				15,
+				$jumlah_kolom,
+				$baris_akhir
+			)
+			->getAlignment()
+			->setHorizontal(
+				\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER
+			);
+		}
+
+
+		// =========================================================
 		// NAMA SISWA RATA KIRI
 		// =========================================================
 
-		$sheet->getStyleByColumnAndRow(
-			$kolom_nama,
-			3,
-			$kolom_nama,
-			$baris - 1
-		)
-		->getAlignment()
-		->setHorizontal(
-			\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT
-		);
+		if ($baris_akhir >= 15) {
+
+			$sheet->getStyleByColumnAndRow(
+				$kolom_nama,
+				15,
+				$kolom_nama,
+				$baris_akhir
+			)
+			->getAlignment()
+			->setHorizontal(
+				\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT
+			);
+		}
+
+
+		// =========================================================
+		// FORMAT NILAI
+		// =========================================================
+
+		if ($baris_akhir >= 15) {
+
+			$sheet->getStyleByColumnAndRow(
+				$kolom_nilai,
+				15,
+				$kolom_nilai,
+				$baris_akhir
+			)
+			->getNumberFormat()
+			->setFormatCode('0.00');
+		}
 
 
 		// =========================================================
 		// UKURAN KOLOM
 		// =========================================================
 
+		// -----------------------------------------
 		// No
+		// -----------------------------------------
+
 		$sheet->getColumnDimension('A')
 			->setWidth(6);
 
 
-		// Nama siswa
+		// -----------------------------------------
+		// Nama Siswa
+		// -----------------------------------------
+
 		$sheet->getColumnDimension(
 			\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(
 				$kolom_nama
@@ -1967,8 +2158,15 @@ class Adm extends CI_Controller
 		)->setWidth(25);
 
 
-		// Kolom soal
-		for ($i = 3; $i < $kolom_benar; $i++) {
+		// -----------------------------------------
+		// Kolom Soal
+		// -----------------------------------------
+
+		for (
+			$i = $kolom_nama + 1;
+			$i < $kolom_benar;
+			$i++
+		) {
 
 			$sheet->getColumnDimension(
 				\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(
@@ -1978,7 +2176,10 @@ class Adm extends CI_Controller
 		}
 
 
-		// Jumlah benar
+		// -----------------------------------------
+		// Jumlah Benar
+		// -----------------------------------------
+
 		$sheet->getColumnDimension(
 			\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(
 				$kolom_benar
@@ -1986,7 +2187,10 @@ class Adm extends CI_Controller
 		)->setWidth(15);
 
 
+		// -----------------------------------------
 		// Nilai
+		// -----------------------------------------
+
 		$sheet->getColumnDimension(
 			\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(
 				$kolom_nilai
@@ -1998,19 +2202,44 @@ class Adm extends CI_Controller
 		// TINGGI BARIS
 		// =========================================================
 
+		// Detail ujian
 		$sheet->getRowDimension(1)
 			->setRowHeight(25);
 
 		$sheet->getRowDimension(2)
 			->setRowHeight(22);
 
+		$sheet->getRowDimension(3)
+			->setRowHeight(22);
 
-		// =========================================================
-		// FREEZE HEADER
-		// =========================================================
+		$sheet->getRowDimension(4)
+			->setRowHeight(22);
 
-		$sheet->freezePane('C3');
 
+		// Statistik
+		$sheet->getRowDimension(6)
+			->setRowHeight(22);
+
+		$sheet->getRowDimension(7)
+			->setRowHeight(22);
+
+		$sheet->getRowDimension(8)
+			->setRowHeight(22);
+
+		$sheet->getRowDimension(9)
+			->setRowHeight(22);
+
+		$sheet->getRowDimension(10)
+			->setRowHeight(22);
+
+
+		// Header nomor soal
+		$sheet->getRowDimension(13)
+			->setRowHeight(25);
+
+		// Header kunci
+		$sheet->getRowDimension(14)
+			->setRowHeight(22);
 
 		// =========================================================
 		// PRINT SETUP
